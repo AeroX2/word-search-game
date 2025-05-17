@@ -70,9 +70,33 @@
 {/if}
 
 <style>
+
+    @keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes wordComplete {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); background-color: rgba(100, 255, 100, 0.2); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes checkmarkPop {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes wordCelebrate {
+        0% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-5px) scale(1.1); }
+        100% { transform: translateY(0) scale(1); }
+    }
+
     .word-list-toggle {
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         right: 20px;
         padding: 10px 20px;
         border: 1px solid #ccc;
@@ -174,28 +198,5 @@
 
     :global(.game-complete) .word:nth-child(4n) {
         animation-delay: 0.3s;
-    }
-
-    @keyframes slideIn {
-        from { transform: translateY(20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes wordComplete {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); background-color: rgba(100, 255, 100, 0.2); }
-        100% { transform: scale(1); }
-    }
-
-    @keyframes checkmarkPop {
-        0% { transform: scale(0); }
-        50% { transform: scale(1.2); }
-        100% { transform: scale(1); }
-    }
-
-    @keyframes wordCelebrate {
-        0% { transform: translateY(0) scale(1); }
-        50% { transform: translateY(-5px) scale(1.1); }
-        100% { transform: translateY(0) scale(1); }
     }
 </style> 

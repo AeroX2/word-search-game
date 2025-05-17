@@ -23,7 +23,7 @@ export type Coord = {
 
 type CellInfo = {
     char: string;
-    direction: Direction | null;  // null for cells that are part of multiple words
+    direction: Direction | undefined;
 }
 
 export type Word = {
@@ -46,7 +46,7 @@ export class Grid {
         return `${x},${y}`;
     }
     
-    addChar(x: number, y: number, char: string, direction: Direction) {
+    addChar(x: number, y: number, char: string, direction?: Direction) {
         this.minX = Math.min(this.minX, x);
         this.maxX = Math.max(this.maxX, x);
         this.minY = Math.min(this.minY, y);
@@ -156,13 +156,17 @@ function addWordToGrid(
         
         switch (direction) {
             case Direction.UP:
-                x--;
-            case Direction.DOWN:
-                x++;
-            case Direction.LEFT:
                 y--;
-            case Direction.RIGHT:
+                break;
+            case Direction.DOWN:
                 y++;
+                break;
+            case Direction.LEFT:
+                x--;
+                break;
+            case Direction.RIGHT:
+                x++;
+                break;
         }
 
         if (!success) {
@@ -176,6 +180,21 @@ function addWordToGrid(
     }
 
     return { text: word, coords };
+}
+
+function getRandomChar(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return chars[Math.floor(Math.random() * chars.length)];
+}
+
+function fillEmptyCells(grid: Grid) {
+    for (let y = grid.minY; y <= grid.maxY; y++) {
+        for (let x = grid.minX; x <= grid.maxX; x++) {
+            if (!grid.getChar(x, y)) {
+                grid.addChar(x, y, getRandomChar());
+            }
+        }
+    }
 }
 
 export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } {
@@ -249,8 +268,12 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
         words.push(addWordToGrid(grid, randomWord, randomDirection, preferredX, preferredY));
     }
 
+    // Fill empty cells with random characters
+    fillEmptyCells(grid);
+
     // Rotate the grid if height > width
     const normalizedGrid = grid.normalize();
+    const normalizedWords = grid.normalizeWords(words);
     if (normalizedGrid.height > normalizedGrid.width) {
         const rotatedGrid = new Grid();
         const rotatedWords: Word[] = [];
@@ -267,7 +290,7 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
         }
 
         // Rotate word coordinates
-        for (const word of words) {
+        for (const word of normalizedWords) {
             const rotatedCoords = word.coords.map(coord => ({
                 x: coord.y,
                 y: normalizedGrid.width - 1 - coord.x
@@ -277,9 +300,8 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
                 coords: rotatedCoords
             });
         }
-
         return { grid: rotatedGrid, words: rotatedWords };
     }
 
-    return { grid: normalizedGrid, words };
+    return { grid: normalizedGrid, words: normalizedWords };
 }

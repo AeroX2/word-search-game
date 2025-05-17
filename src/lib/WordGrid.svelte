@@ -1,5 +1,6 @@
 <script lang="ts">
     import { gameStore } from './stores/game_store';
+    import { gamePresenter } from './presenter/game_presenter';
     import WordList from "./WordList.svelte";
     import DevTools from "./DevTools.svelte";
     import GridCell from "./GridCell.svelte";
@@ -9,34 +10,35 @@
 
     function handleMouseDown(x: number, y: number, event: MouseEvent) {
         event.preventDefault();
-        gameStore.setDragging(true);
-        gameStore.toggleCell(x, y);
+        gamePresenter.setDragging(true);
+        gamePresenter.toggleCell(x, y);
     }
 
     function handleMouseEnter(x: number, y: number) {
         if ($gameStore.isDragging) {
-            gameStore.toggleCell(x, y);
+            gamePresenter.toggleCell(x, y);
         }
     }
 
     function handleMouseUp() {
-        gameStore.setDragging(false);
+        gamePresenter.setDragging(false);
     }
 
     function completeRandomWord() {
         const incompleteWords = $gameStore.words.filter(w => !w.completed);
         if (incompleteWords.length > 0) {
             const randomIndex = Math.floor(Math.random() * incompleteWords.length);
-            gameStore.completeWord(incompleteWords[randomIndex]);
+            gamePresenter.completeWord(incompleteWords[randomIndex]);
         }
     }
 
     function completeAllWords() {
-        $gameStore.words.forEach(word => gameStore.completeWord(word));
+        $gameStore.words.forEach(word => gamePresenter.completeWord(word));
+        gamePresenter.triggerWin();
     }
 
     onMount(() => {
-        gameStore.generateGrid(sliderValue);
+        gamePresenter.generateGrid(sliderValue);
     });
 </script>
 
@@ -54,7 +56,7 @@
             bind:value={sliderValue}
         />
     </div>
-    <button onclick={() => gameStore.generateGrid(sliderValue)}>New Game</button>
+    <button onclick={() => gamePresenter.generateGrid(sliderValue)}>New Game</button>
 </div>
 
 {#if $gameStore.grid}
@@ -90,21 +92,6 @@
 {/if}
 
 <style>
-    .grid-container {
-        display: grid;
-        margin: 20px 0;
-        width: min(100vw - 40px, 800px);
-        margin-left: auto;
-        margin-right: auto;
-        grid-template-columns: repeat(var(--cols, 10), minmax(0, 1fr));
-        user-select: none;
-        -webkit-user-select: none;
-    }
-
-    .grid-container.generating {
-        animation: fadeIn 0.5s ease-out;
-    }
-
     @keyframes pulse {
         0% { transform: scale(1); }
         50% { transform: scale(1.1); }
@@ -117,19 +104,23 @@
         100% { transform: scale(1); }
     }
 
-    @keyframes celebrate {
-        0% { transform: scale(1) rotate(0deg); }
-        25% { transform: scale(1.2) rotate(5deg); }
-        50% { transform: scale(1) rotate(0deg); }
-        75% { transform: scale(1.2) rotate(-5deg); }
-        100% { transform: scale(1) rotate(0deg); }
-    }
-
     @keyframes fadeIn {
         from { opacity: 0; transform: scale(0.9); }
         to { opacity: 1; transform: scale(1); }
     }
-
+    .grid-container {
+        display: grid;
+        margin: 20px 0;
+        width: min(100vw - 40px, 800px);
+        margin-left: auto;
+        margin-right: auto;
+        grid-template-columns: repeat(var(--cols, 10), minmax(0, 1fr));
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .grid-container.generating {
+        animation: fadeIn 0.5s ease-out;
+    }
     .controls {
         display: flex;
         flex-direction: column;
@@ -137,14 +128,12 @@
         gap: 1rem;
         margin-bottom: 1rem;
     }
-
     .word-count-control {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 0.5rem;
     }
-
     input[type="range"] {
         width: 200px;
     }
