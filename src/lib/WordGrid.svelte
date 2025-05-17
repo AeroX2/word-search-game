@@ -6,7 +6,7 @@
     import GridCell from "./GridCell.svelte";
     import { onMount } from 'svelte';
 
-    let sliderValue = $state(10);
+    let sliderValue = $state(20);
 
     function handleMouseDown(x: number, y: number, event: MouseEvent) {
         event.preventDefault();

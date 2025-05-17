@@ -6,9 +6,22 @@ enum Direction {
     DOWN,
     LEFT,
     RIGHT,
+    UP_LEFT,
+    UP_RIGHT,
+    DOWN_LEFT,
+    DOWN_RIGHT,
 }
 
-const DIRECTIONS = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT];
+const DIRECTIONS = [
+    Direction.UP,
+    Direction.DOWN,
+    Direction.LEFT,
+    Direction.RIGHT,
+    Direction.UP_LEFT,
+    Direction.UP_RIGHT,
+    Direction.DOWN_LEFT,
+    Direction.DOWN_RIGHT,
+];
 const ATTACH_CHANCE = 0.7;  // Chance to attach to existing word
 const EDGE_BUFFER = 0.2;    // Minimum distance from edges in percentage of grid size
 const ASPECT_RATIO_WIDE = 1.2;
@@ -132,10 +145,39 @@ function isHorizontal(direction: Direction): boolean {
     return direction === Direction.LEFT || direction === Direction.RIGHT;
 }
 
+function isVertical(direction: Direction): boolean {
+    return direction === Direction.UP || direction === Direction.DOWN;
+}
+
+function isDiagonal(direction: Direction): boolean {
+    return direction === Direction.UP_LEFT || 
+           direction === Direction.UP_RIGHT || 
+           direction === Direction.DOWN_LEFT || 
+           direction === Direction.DOWN_RIGHT;
+}
+
 function getPerpendicularDirections(direction: Direction): Direction[] {
-    return isHorizontal(direction) 
-        ? [Direction.UP, Direction.DOWN]
-        : [Direction.LEFT, Direction.RIGHT];
+    if (isHorizontal(direction)) {
+        return [Direction.UP, Direction.DOWN];
+    } else if (isVertical(direction)) {
+        return [Direction.LEFT, Direction.RIGHT];
+    } else {
+        // For diagonal directions, return all non-parallel directions
+        return DIRECTIONS.filter(d => d !== direction && d !== getOppositeDirection(direction));
+    }
+}
+
+function getOppositeDirection(direction: Direction): Direction {
+    switch (direction) {
+        case Direction.UP: return Direction.DOWN;
+        case Direction.DOWN: return Direction.UP;
+        case Direction.LEFT: return Direction.RIGHT;
+        case Direction.RIGHT: return Direction.LEFT;
+        case Direction.UP_LEFT: return Direction.DOWN_RIGHT;
+        case Direction.UP_RIGHT: return Direction.DOWN_LEFT;
+        case Direction.DOWN_LEFT: return Direction.UP_RIGHT;
+        case Direction.DOWN_RIGHT: return Direction.UP_LEFT;
+    }
 }
 
 function addWordToGrid(
@@ -166,6 +208,22 @@ function addWordToGrid(
                 break;
             case Direction.RIGHT:
                 x++;
+                break;
+            case Direction.UP_LEFT:
+                x--;
+                y--;
+                break;
+            case Direction.UP_RIGHT:
+                x++;
+                y--;
+                break;
+            case Direction.DOWN_LEFT:
+                x--;
+                y++;
+                break;
+            case Direction.DOWN_RIGHT:
+                x++;
+                y++;
                 break;
         }
 
@@ -217,7 +275,7 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
             let randomDirection: Direction;
             if (cellInfo?.direction !== null) {
                 const perpendicularDirections = getPerpendicularDirections(cellInfo!.direction!);
-                randomDirection = perpendicularDirections[randInt(0, 1)];
+                randomDirection = perpendicularDirections[randInt(0, perpendicularDirections.length - 1)];
             } else {
                 randomDirection = randDirection();
             }
@@ -228,9 +286,16 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
             const fuzzAmount = Math.floor(randomWord.length / 2);
             
             if (isHorizontal(randomDirection)) {
+                fuzzedX = Math.floor(randomWord.length / 2);
+                fuzzedX += randInt(-fuzzAmount, fuzzAmount);
+            } else if (isVertical(randomDirection)) {
+                fuzzedY = Math.floor(randomWord.length / 2);
                 fuzzedY += randInt(-fuzzAmount, fuzzAmount);
             } else {
-                fuzzedX += randInt(-fuzzAmount, fuzzAmount);
+                // For diagonal directions, fuzz in both directions but less
+                const diagonalFuzz = Math.floor(fuzzAmount / 2);
+                fuzzedX += randInt(-diagonalFuzz, diagonalFuzz);
+                fuzzedY += randInt(-diagonalFuzz, diagonalFuzz);
             }
             
             words.push(addWordToGrid(grid, randomWord, randomDirection, fuzzedX, fuzzedY));
@@ -249,27 +314,28 @@ export function generateWordGrid(amount: number): { grid: Grid; words: Word[] } 
 
         let preferredX = grid.minX;
         let preferredY = grid.minY;
-        
+
+        // Adjust preferred position based on aspect ratio
         if (aspectRatio > ASPECT_RATIO_WIDE) {
             // Grid is too wide, prefer vertical placement
             preferredX = randInt(minX, maxX);
-            preferredY = randInt(minY, maxY);
+            preferredY = grid.minY;
         } else if (aspectRatio < ASPECT_RATIO_NARROW) {
-            // Grid is too tall, prefer horizontal placement
-            preferredX = randInt(minX, maxX);
+            // Grid is too narrow, prefer horizontal placement
+            preferredX = grid.minX;
             preferredY = randInt(minY, maxY);
         } else {
-            // Grid is roughly square, allow any placement
+            // Grid is balanced, use random placement
             preferredX = randInt(minX, maxX);
             preferredY = randInt(minY, maxY);
         }
 
-        const randomDirection = randDirection();
-        words.push(addWordToGrid(grid, randomWord, randomDirection, preferredX, preferredY));
+        const direction = randDirection();
+        words.push(addWordToGrid(grid, randomWord, direction, preferredX, preferredY));
     }
 
-    // Fill empty cells with random characters
-    fillEmptyCells(grid);
+    // // Fill empty cells with random characters
+    // fillEmptyCells(grid);
 
     // Rotate the grid if height > width
     const normalizedGrid = grid.normalize();

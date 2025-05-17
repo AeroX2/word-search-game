@@ -45,16 +45,6 @@ export class GamePresenter {
 
     generateGrid(wordCount: number) {
         const result = generateWordGrid(wordCount);
-        
-        // Fill empty cells with random characters
-        const grid = result.grid;
-        for (let y = grid.minY; y <= grid.maxY; y++) {
-            for (let x = grid.minX; x <= grid.maxX; x++) {
-                if (!grid.getChar(x, y)) {
-                    grid.addChar(x, y, getRandomChar());
-                }
-            }
-        }
 
         this.store.set({
             wordCount,
